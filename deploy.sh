@@ -31,7 +31,29 @@ echo "== Baue"
 ./build.sh 2>&1 | grep -E "FERTIG|Fehler:|error:" | tail -2
 
 echo "== Installiere"
-$ADB -s "$D" install -r build/lean-launcher.apk | tail -1
+INST_OUT=$($ADB -s "$D" install -r build/lean-launcher.apk 2>&1)
+
+if printf '%s' "$INST_OUT" | grep -q "INSTALL_FAILED_UPDATE_INCOMPATIBLE"; then
+  echo
+  echo "   !! Signatur-Konflikt: die installierte Version stammt von einem"
+  echo "      anderen Keystore. Ein Update ist dann nicht moeglich."
+  echo
+  echo "      Die App muss einmal deinstalliert werden:"
+  echo "        $ADB -s $D uninstall $PKG"
+  echo
+  echo "      Danach dieses Skript erneut starten."
+  echo "      Hinweis: Deinstallation loescht nur die App, nicht deine Einstellungen"
+  echo "      am Fire TV (Accessibility-Service bleibt gesetzt)."
+  echo
+  exit 1
+fi
+
+if ! printf '%s' "$INST_OUT" | grep -q "Success"; then
+  echo "   !! Installation fehlgeschlagen:"
+  printf '%s\n' "$INST_OUT" | tail -5
+  exit 1
+fi
+echo "   OK"
 
 echo "== Service nach Install neu setzen"
 $ADB -s "$D" shell "settings put secure enabled_accessibility_services $SVC"

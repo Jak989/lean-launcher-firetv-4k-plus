@@ -112,9 +112,31 @@ ok "Gerät autorisiert"
 bold "Installiere Lean Launcher ..."
 INST="$("$ADB" -s "$TARGET" install -r "$TMPDIR/app.apk" 2>&1)"
 case "$INST" in
-  *Success*) ok "Installiert" ;;
-  *INSTALL_FAILED_ALREADY_EXISTS*) die "App ist bereits installiert. Erst deinstallieren? Nein — Skript nutzt -r, das sollte nicht passieren." ;;
-  *) die "Installation fehlgeschlagen: $INST" ;;
+  *Success*)
+    ok "Installiert"
+    ;;
+  *INSTALL_FAILED_UPDATE_INCOMPATIBLE*)
+    echo
+    warn "Auf dem Gerät liegt eine Version mit anderem Signaturschlüssel."
+    echo "      Ein Update ist dann nicht möglich — die App muss einmal weg."
+    echo
+    printf "      Jetzt deinstallieren und neu installieren? [j/N] "
+    read -r ANS
+    if [ "$ANS" = "j" ] || [ "$ANS" = "J" ] || [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
+      "$ADB" -s "$TARGET" uninstall "$PKG" >/dev/null 2>&1 || true
+      INST2="$("$ADB" -s "$TARGET" install "$TMPDIR/app.apk" 2>&1)"
+      case "$INST2" in
+        *Success*) ok "Neu installiert" ;;
+        *) die "Auch die Neuinstallation ist fehlgeschlagen: $INST2" ;;
+      esac
+    else
+      die "Abgebrochen. Deinstallation manuell:
+      $ADB -s $TARGET uninstall $PKG"
+    fi
+    ;;
+  *)
+    die "Installation fehlgeschlagen: $INST"
+    ;;
 esac
 
 # ---------------------------------------------------------------- 6. Service setzen

@@ -56,7 +56,7 @@ public class HomeActivity extends Activity {
 
     private FrameLayout root;
     private LinearLayout appGrid;
-    private TextView clockBig, dateLine, weatherLine, status;
+    private TextView clockBig, dateLine, weatherLine, weatherDetail, status;
     private TextView liveTxt, newsTxt;
     private final Handler ui = new Handler(Looper.getMainLooper());
     private float dp;
@@ -124,8 +124,15 @@ public class HomeActivity extends Activity {
         String d = dateFmt.format(now);
         if (d.length() > 0) d = Character.toUpperCase(d.charAt(0)) + d.substring(1);
         dateLine.setText(d);
-        String w = Weather.cached(this);
-        weatherLine.setText(w.length() > 0 ? Weather.CITY + "  " + w : "");
+        Weather.Info wi = Weather.cached(this);
+        if (wi.valid()) {
+            weatherLine.setText(Weather.CITY + "  " + wi.symbol + "  " + wi.temp + "°");
+            weatherDetail.setText(wi.label + "  ·  gefühlt " + wi.feels + "°  ·  "
+                    + wi.min + "°/" + wi.max + "°  ·  " + wi.humidity + " %");
+        } else {
+            weatherLine.setText("");
+            weatherDetail.setText("");
+        }
     }
 
     private void resetScreensaver() {
@@ -192,13 +199,30 @@ public class HomeActivity extends Activity {
         dateLine.setGravity(Gravity.RIGHT);
         meta.addView(dateLine);
 
-        weatherLine = new TextView(this);
-        weatherLine.setTextColor(Ui.TEXT_DIM);
-        weatherLine.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-        weatherLine.setGravity(Gravity.RIGHT);
-        meta.addView(weatherLine);
+        // Wetter: Symbol + Temperatur gross, Details darunter
+        LinearLayout weatherBox = new LinearLayout(this);
+        weatherBox.setOrientation(LinearLayout.HORIZONTAL);
+        weatherBox.setGravity(Gravity.CENTER_VERTICAL);
 
-        head.addView(meta);
+        weatherLine = new TextView(this);
+        weatherLine.setTextColor(Ui.TEXT);
+        weatherLine.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
+        weatherLine.setGravity(Gravity.RIGHT);
+        weatherBox.addView(weatherLine);
+
+        meta.addView(weatherBox);
+
+        weatherDetail = new TextView(this);
+        weatherDetail.setTextColor(Ui.TEXT_DIM);
+        weatherDetail.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+        weatherDetail.setGravity(Gravity.RIGHT);
+        weatherDetail.setPadding(0, dp(1), 0, 0);
+        meta.addView(weatherDetail);
+
+        LinearLayout.LayoutParams metaLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        metaLp.leftMargin = dp(16);
+        head.addView(meta, metaLp);
         page.addView(head);
 
         // ---- Zwei Hauptkacheln ----
