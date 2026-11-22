@@ -21,6 +21,24 @@ Jede Änderung ist umkehrbar.
 
 **→ [Read this in English](#english)**
 
+> ## ⚠️ Diese App braucht ADB — eine APK allein reicht nicht
+>
+> Android erlaubt **keiner** App, sich selbst als Bedienungshilfe
+> (Accessibility-Service) einzuschalten. Das ist eine Sicherheitssperre: sonst
+> könnte jede Malware sich selbst Bedienrechte über den ganzen Bildschirm geben.
+>
+> Beim Fire TV kommt dazu, dass die Barrierefreiheits-Seite in den Einstellungen
+> **keine Dienstliste** hat — es gibt dort schlicht keinen Eintrag, den man
+> antippen könnte. Geprüft auf Fire OS 8.1.8.5.
+>
+> **Wer diese App nutzen will, braucht einmalig einen Rechner mit `adb`** (oder
+> ein anderes Gerät im selben Netz, das `adb` sprechen kann). Danach läuft alles
+> von selbst — auch über Neustarts hinweg.
+>
+> Wer das nicht will: dieses Projekt ist dann nichts für dich. Jede Lösung, die
+> „APK installieren und fertig" verspricht, müsste diese Sicherheitssperre
+> umgehen — und das wäre genau das Loch, das Android bewusst geschlossen hat.
+
 ---
 
 ## Warum das existiert
@@ -256,6 +274,24 @@ just `adb`. Every change is reversible.
 > The device belongs to the buyer, not the manufacturer. A handful of `adb`
 > commands get you to the layer that controls this interface. That's all this
 > project does — and anyone can do it on their own device.
+
+> ## ⚠️ This app requires ADB — the APK alone is not enough
+>
+> Android does **not** allow any app to enable itself as an accessibility
+> service. That is a security boundary: otherwise any malware could grant itself
+> control over the entire screen.
+>
+> On Fire TV there is an additional problem: the accessibility page in Settings
+> has **no service list** at all — there is no entry to tap. Verified on
+> Fire OS 8.1.8.5.
+>
+> **Using this app requires a computer with `adb`, once** (or another device on
+> the same network that speaks `adb`). After that everything runs by itself,
+> including across reboots.
+>
+> If that is not acceptable for you, this project is not for you. Any solution
+> promising "install the APK and you're done" would have to bypass that security
+> boundary — which is exactly the hole Android deliberately closed.
 
 ## Why this exists
 
