@@ -1,0 +1,17 @@
+# Build-Artefakte
+build/
+*.apk
+*.apk.idsig
+*.idsig
+
+# Signierung - nie einchecken
+*.jks
+*.keystore
+keystore*
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Start</string>
+    <string name="svc_desc">Haelt den Amazon-Homescreen verdeckt, damit die eigene Startseite erscheint.</string>
+</resources>
