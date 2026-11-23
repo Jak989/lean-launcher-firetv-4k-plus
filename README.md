@@ -160,8 +160,27 @@ Was dabei zu beachten war:
   **prüft nach**, statt zu hoffen.
 
 Gut benutzbar, aber nicht unsichtbar: bei jedem App-Update schaltet Android den
-Accessibility-Service ab und er muss neu gesetzt werden. Das ist Fire-OS-Politik,
-nicht behebbar ohne Root.
+Accessibility-Service ab. Das ist Fire-OS-Politik, nicht behebbar ohne Root.
+
+### Selbstheilung ohne PC (seit 11/2026)
+
+Damit man nach jedem Update nicht wieder zum Rechner laufen muss, heilt sich die
+App selbst — einmalig ist dafür **ein** Befehl nötig:
+
+```bash
+adb shell pm grant io.github.leanlauncher android.permission.WRITE_SECURE_SETTINGS
+```
+
+Mit diesem Recht darf die App die A11y-Einstellung selbst schreiben. `ServiceGuard`
+prüft bei jedem Vordergrund-Wechsel und in `BootReceiver` (`BOOT_COMPLETED`,
+`QUICKBOOT_POWERON`, `MY_PACKAGE_REPLACED`), ob der Eintrag noch da ist, und schreibt
+ihn nur bei Abweichung zurück. Kosten: kein eigener Dienst, kein Thread, kein Wakelock,
+60-s-Sperre zwischen zwei Prüfungen — gemessen praktisch 0 CPU.
+
+Am Gerät geprüft (AFTMA08C15, Fire OS 8.1.8.5): Einstellung gelöscht → App gestartet →
+`settings` wieder gesetzt, Service gebunden, Home-Taste landet auf der eigenen Startseite.
+Log-Beleg: `I ServiceGuard: Eintrag repariert: io.github.leanlauncher/…HomeService`.
+
 
 ---
 

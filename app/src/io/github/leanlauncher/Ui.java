@@ -48,4 +48,28 @@ final class Ui {
         d.setCornerRadius(radius * dp);
         return d;
     }
+
+    /** Karte fuer die Wetter-Kachel: leichter Verlauf, damit sie sich abhebt. */
+    static GradientDrawable weatherCard(float dp) {
+        GradientDrawable d = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                new int[]{Color.rgb(30, 32, 38), Color.rgb(19, 20, 24)});
+        d.setCornerRadius(16 * dp);
+        return d;
+    }
+
+    /** ID der ersten grossen Kachel - Ziel fuer D-Pad "runter". */
+    static final int KACHEL_ID = 0x7f0f0002;
+
+    /**
+     * Fokus-Rahmen nach Android-TV-Guideline: 3 dp Border, Radius 8 dp.
+     * Farbe allein reicht auf 3 m Entfernung nicht - der Rahmen macht den
+     * Fokus auch bei hellem Bildinhalt eindeutig.
+     */
+    static GradientDrawable focusRing(float dp, int fill, int ring, float radius) {
+        GradientDrawable d = new GradientDrawable();
+        d.setColor(fill);
+        d.setCornerRadius(radius * dp);
+        d.setStroke((int) Math.max(2f, 3 * dp), ring);
+        return d;
+    }
 }

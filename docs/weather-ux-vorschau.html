@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Lean Launcher · Wetter UX-Vergleich (960×540 dp)</title>
+<style>
+  /* 1 CSS-px = 1 dp. Bildschirm = 960x540 dp genau wie auf dem Fire TV. */
+  :root{
+    --bg-top:#0A0A0C; --bg-bot:#000;
+    --card:#16161A; --card2:#1E2026; --card3:#131418;
+    --text:#F0F0F4; --dim:#8C8C98; --dim2:#787886;
+    --accent:#F7941E; --rain:#78B2FF;
+    --sun:#FFC74A; --moon:#D6DEF5; --cloud:#B2BCCA; --cloudd:#8E99AA;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html,body{background:#000; color:var(--text);
+    font-family:"Helvetica Neue",Arial,sans-serif; -webkit-font-smoothing:antialiased}
+  .tv{
+    width:960px; height:540px; position:relative; overflow:hidden;
+    background:linear-gradient(to bottom,var(--bg-top),var(--bg-bot));
+    margin:0 auto 18px;
+  }
+  .cap{width:960px;margin:0 auto 6px;color:#777;font-size:11px}
+  .wrap{width:960px;margin:0 auto}
+  .thin{font-weight:200}
+  .light{font-weight:300}
+
+  /* ---------- gezeichnete Symbole (SVG, entspricht Canvas-Code) ---------- */
+  svg.ic{display:block;overflow:visible}
+  .cloudfill{fill:var(--cloud)}
+  .sunfill{fill:var(--sun)}
+  .moonfill{fill:var(--moon)}
+  .rainstroke{stroke:var(--rain);stroke-width:2.6;stroke-linecap:round;fill:none}
+
+  /* ---------- Homescreen-Kachel: IST ---------- */
+  .tile{position:absolute;left:48px;width:864px;border-radius:16px;
+    background:linear-gradient(135deg,#1E2026,#131418);
+    display:flex;align-items:center;padding:0 16px 0 20px}
+  .tile.now{top:44px;height:96px}
+  .left{display:flex;align-items:center;width:272px}
+  .left .txt{display:flex;flex-direction:column}
+  .trow{display:flex;align-items:flex-end}
+  .t34{font-size:34px;line-height:1;font-weight:200;letter-spacing:-1px}
+  .city{font-size:9px;color:var(--dim);letter-spacing:.05em;margin:0 0 4px 7px;text-transform:uppercase}
+  .cond11{font-size:11px;line-height:1.15;margin-top:2px}
+  .meta9{font-size:9px;color:var(--dim);line-height:1.15;margin-top:1px}
+  .strip{display:flex;flex:1;align-items:center}
+  .col{flex:1;display:flex;flex-direction:column;align-items:center;padding:4px 3px;border-radius:8px}
+  .col.today{background:rgba(247,148,30,.10)}
+  .wd{font-size:10px;letter-spacing:.04em;color:var(--dim)}
+  .col.today .wd{color:var(--accent)}
+  .hi{font-size:13px;line-height:1.1}
+  .lo{font-size:11px;line-height:1.1;color:var(--dim)}
+  .rr{font-size:9px;color:var(--rain);line-height:1.1;min-height:11px}
+
+  /* ---------- Homescreen-Kachel: SOLL (Banner) ---------- */
+  .banner{position:absolute;left:48px;width:864px;border-radius:14px;
+    background:linear-gradient(135deg,#1B1D22,#121317);
+    display:flex;align-items:center;padding:0 20px}
+  .banner.now{top:44px;height:88px}
+  .btemp{font-size:30px;line-height:1;font-weight:200;letter-spacing:-1px}
+  .bline{font-size:19px;line-height:1.15;font-weight:300}
+  .bmeta{font-size:13px;line-height:1.2;color:var(--dim);margin-top:3px}
+  .divider{width:1px;height:44px;background:rgba(255,255,255,.10);margin:0 18px}
+
+  /* ---------- Detailseite: IST ---------- */
+  .page{position:absolute;inset:0;padding:24px 56px 28px}
+  .kicker{font-size:11px;letter-spacing:.18em;color:var(--accent);font-weight:700}
+  .nowrow{display:flex;align-items:center;padding:10px 0 16px}
+  .t62{font-size:62px;line-height:.95;font-weight:200;letter-spacing:-2px}
+  .cond17{font-size:17px;line-height:1.25}
+  .feel13{font-size:13px;color:var(--dim);margin-top:4px}
+  .facts{display:flex;gap:8px}
+  .fcard{flex:1;background:var(--card);border-radius:12px;padding:12px 16px}
+  .flabel{font-size:9px;letter-spacing:.12em;color:var(--dim)}
+  .fval{font-size:22px;font-weight:300;margin-top:3px;line-height:1.1}
+  .fsub{font-size:10px;color:#787886;line-height:1.2}
+  .sect{font-size:10px;letter-spacing:.16em;color:var(--dim);font-weight:700;margin:20px 0 8px}
+  .drow{display:flex;align-items:center;padding:8px 4px;gap:10px}
+  .dwd{width:80px;font-size:13px}
+  .dcond{width:110px;font-size:11px;color:var(--dim)}
+  .barwrap{flex:1;height:8px;border-radius:4px;background:#2A2A32;position:relative}
+  .bar{position:absolute;top:0;height:8px;border-radius:4px;background:#FFE2A8}
+  .dvals{width:96px;text-align:right;font-size:12px}
+  .drain{width:48px;text-align:right;font-size:11px;color:var(--rain)}
+  .scrollhint{position:absolute;right:8px;top:180px;font-size:9px;color:#555}
+
+  /* ---------- Detailseite: SOLL (#2) ---------- */
+  .r2{position:absolute;inset:0;padding:22px 56px 24px;display:flex;flex-direction:column}
+  .hdr{display:flex;align-items:baseline;justify-content:space-between}
+  .hsub{font-size:11px;letter-spacing:.16em;color:var(--dim)}
+  .now2{display:flex;align-items:center;margin-top:6px;height:96px}
+  .t38{font-size:38px;line-height:1;font-weight:200;letter-spacing:-1px}
+  .feel19{font-size:19px;line-height:1.2;color:var(--dim)}
+  .feelfeel{color:var(--text)}
+  .highlow{display:flex;gap:26px;margin-left:26px;font-size:18px;font-weight:300}
+  .highlow span small{display:block;font-size:11px;letter-spacing:.10em;color:var(--dim);font-weight:400}
+  .stroke{display:flex;align-items:center;gap:10px;background:rgba(120,178,255,.10);
+    border-radius:10px;padding:7px 12px;font-size:14px;color:#CFE2FF}
+  .row3{display:flex;gap:10px;margin-top:12px;height:58px}
+  .mini{flex:1;background:var(--card);border-radius:10px;padding:8px 12px;display:flex;
+    flex-direction:column;justify-content:center}
+  .mini .l{font-size:10px;letter-spacing:.10em;color:var(--dim)}
+  .mini .v{font-size:17px;font-weight:300;margin-top:1px;line-height:1.1}
+  .mini .v em{font-style:normal;font-size:11px;color:var(--dim);margin-left:3px}
+  .chartbox{margin-top:14px;height:150px;background:var(--card3);border-radius:12px;padding:8px 10px}
+  .charthead{font-size:10px;letter-spacing:.16em;color:var(--dim);font-weight:700}
+  .daylist{display:flex;flex-direction:column;margin-top:2px}
+  .dl{display:flex;align-items:center;height:28px;gap:10px}
+  .dl .d{width:44px;font-size:14px}
+  .dl .barwrap{height:6px;border-radius:3px}
+  .dl .bar{height:6px;border-radius:3px}
+  .dl .v{width:66px;text-align:right;font-size:14px}
+  .dl .r{width:40px;text-align:right;font-size:12px;color:var(--rain)}
+  .legend{font-size:10px;color:#6E6E7C}
+
+  /* ---------- Varianten B (5 Tage) / C (Diagramm) ---------- */
+  .varlabel{font-size:10px;letter-spacing:.14em;color:var(--dim);font-weight:700;margin:0 0 6px}
+  .tempbar{position:absolute;width:36px;border-radius:9px;
+    background:linear-gradient(to right,#A9D2FF,#CFE0F5);}
+  .tempbar.warm{background:linear-gradient(to right,#FFE2A8,#FFC97A)}
+</style>
+</head>
+<body>
+
+<!-- ============ 1. HOMESCREEN IST ============ -->
+<div class="cap">1 · IST — Homescreen-Kachel 960×96 dp, so wie sie heute gebaut ist</div>
+<div class="tv">
+  <div style="position:absolute;left:48px;top:16px;width:864px;display:flex;align-items:flex-end">
+    <div style="font-size:32px;font-weight:200;flex:1;line-height:1">20:14</div>
+    <div style="font-size:13px;color:var(--dim)">Montag, 24. November</div>
+  </div>
+  <div class="tile now">
+    <div class="left">
+      <svg class="ic" width="46" height="46" viewBox="0 0 46 46" style="margin-right:10px">
+        <g transform="translate(23,23)">
+          <circle cx="0" cy="0" r="9.2" class="cloudfill"/>
+          <circle cx="9" cy="0" r="7.8" class="cloudfill"/>
+          <circle cx="-9" cy="0" r="6" class="cloudfill"/>
+          <rect x="-10" y="0" width="21" height="8" rx="4" class="cloudfill"/>
+        </g>
+      </svg>
+      <div class="txt">
+        <div class="trow"><div class="t34 thin">2°</div><div class="city">München</div></div>
+        <div class="cond11">wolkig&nbsp;&nbsp;2° / -2°</div>
+        <div class="meta9">gefühlt -1°&nbsp;&nbsp;·&nbsp;&nbsp;55 % Regen&nbsp;&nbsp;·&nbsp;&nbsp;14 km/h</div>
+      </div>
+    </div>
+    <div class="strip">
+      <div class="col today"><div class="wd">Heute</div>
+        <svg class="ic" width="26" height="26" viewBox="0 0 26 26" style="margin:3px 0 2px"><g transform="translate(13,12.7)"><circle cx="0" cy="0" r="5.2" class="cloudfill"/><circle cx="5" cy="0" r="4.4" class="cloudfill"/><circle cx="-5" cy="0" r="3.4" class="cloudfill"/><rect x="-5.7" y="0" width="12" height="4.5" rx="2.2" class="cloudfill"/></g></svg>
+        <div class="hi" style="color:#FFE2A8">2°</div><div class="lo">-2°</div><div class="rr">55%</div></div>
+      <div class="col"><div class="wd">Di</div>
+        <svg class="ic" width="26" height="26" viewBox="0 0 26 26" style="margin:3px 0 2px"><g transform="translate(11.6,10.1)"><circle r="3.9" class="sunfill"/></g><g transform="translate(16,16)"><circle cx="-2.4" cy="0" r="4.1" class="cloudfill"/><circle cx="1" cy="-1" r="4.6" class="cloudfill"/><circle cx="4.7" cy="0.4" r="3.2" class="cloudfill"/><rect x="-2.7" y="0" width="8.6" height="3.7" rx="1.9" class="cloudfill"/></g></svg>
+        <div class="hi" style="color:#FFE2A8">4°</div><div class="lo">-1°</div><div class="rr"></div></div>
+      <div class="col"><div class="wd">Mi</div>
+        <svg class="ic" width="26" height="26" viewBox="0 0 26 26" style="margin:3px 0 2px"><g transform="translate(13,11.7)"><circle cx="0" cy="0" r="5.2" class="cloudfill"/><circle cx="5" cy="0" r="4.4" class="cloudfill"/><circle cx="-5" cy="0" r="3.4" class="cloudfill"/><rect x="-5.7" y="0" width="12" height="4.5" rx="2.2" class="cloudfill"/><line x1="-4.4" y1="7.2" x2="-5.6" y2="11.4" class="rainstroke"/><line x1="0" y1="7.2" x2="-1.2" y2="11.4" class="rainstroke"/><line x1="4.4" y1="7.2" x2="3.2" y2="11.4" class="rainstroke"/></g></svg>
+        <div class="hi" style="color:#FFFFFF">6°</div><div class="lo">3°</div><div class="rr">80%</div></div>
+      <div class="col"><div class="wd">Do</div>
+        <svg class="ic" width="26" height="26" viewBox="0 0 26 26" style="margin:3px 0 2px"><g transform="translate(11.6,10.1)"><circle r="3.9" class="sunfill"/></g><g transform="translate(16,16)"><circle cx="-2.4" cy="0" r="4.1" class="cloudfill"/><circle cx="1" cy="-1" r="4.6" class="cloudfill"/><circle cx="4.7" cy="0.4" r="3.2" class="cloudfill"/><rect x="-2.7" y="0" width="8.6" height="3.7" rx="1.9" class="cloudfill"/></g></svg>
+        <div class="hi" style="color:#FFE2A8">9°</div><div class="lo">2°</div><div class="rr">20%</div></div>
+      <div class="col"><div class="wd">Fr</div>
+        <svg class="ic" width="26" height="26" viewBox="0 0 26 26" style="margin:3px 0 2px"><g transform="translate(11.6,10.1)"><circle r="3.9" class="sunfill"/></g><g transform="translate(16,16)"><circle cx="-2.4" cy="0" r="4.1" class="cloudfill"/><circle cx="1" cy="-1" r="4.6" class="cloudfill"/><circle cx="4.7" cy="0.4" r="3.2" class="cloudfill"/><rect x="-2.7" y="0" width="8.6" height="3.7" rx="1.9" class="cloudfill"/></g></svg>
+        <div class="hi" style="color:#FFE2A8">11°</div><div class="lo">4°</div><div class="rr"></div></div>
+      <div class="col"><div class="wd">Sa</div>
+        <svg class="ic" width="26" height="26" viewBox="0 0 26 26" style="margin:3px 0 2px"><g transform="translate(13,12.7)"><circle cx="0" cy="0" r="5.2" class="cloudfill"/><circle cx="5" cy="0" r="4.4" class="cloudfill"/><circle cx="-5" cy="0" r="3.4" class="cloudfill"/><rect x="-5.7" y="0" width="12" height="4.5" rx="2.2" class="cloudfill"/></g></svg>
+        <div class="hi" style="color:#FFE2A8">8°</div><div class="lo">5°</div><div class="rr">35%</div></div>
+      <div class="col"><div class="wd">So</div>
+        <svg class="ic" width="26" height="26" viewBox="0 0 26 26" style="margin:3px 0 2px"><g transform="translate(13,12.7)"><circle cx="0" cy="0" r="5.2" class="cloudfill"/><circle cx="5" cy="0" r="4.4" class="cloudfill"/><circle cx="-5" cy="0" r="3.4" class="cloudfill"/><rect x="-5.7" y="0" width="12" height="4.5" rx="2.2" class="cloudfill"/></g></svg>
+        <div class="hi" style="color:#FFFFFF">7°</div><div class="lo">3°</div><div class="rr">60%</div></div>
+      <div class="col"><div class="wd">Mo</div>
+        <svg class="ic" width="26" height="26" viewBox="0 0 26 26" style="margin:3px 0 2px"><g transform="translate(11.6,10.1)"><circle r="3.9" class="sunfill"/></g><g transform="translate(16,16)"><circle cx="-2.4" cy="0" r="4.1" class="cloudfill"/><circle cx="1" cy="-1" r="4.6" class="cloudfill"/><circle cx="4.7" cy="0.4" r="3.2" class="cloudfill"/><rect x="-2.7" y="0" width="8.6" height="3.7" rx="1.9" class="cloudfill"/></g></svg>
+        <div class="hi" style="color:#FFE2A8">10°</div><div class="lo">6°</div><div class="rr"></div></div>
+    </div>
+  </div>
+  <div class="tv" style="position:absolute;inset:0;background:none;margin:0"></div>
+  <div style="position:absolute;left:48px;top:152px;width:210px;height:172px;background:var(--card);border-radius:14px;display:flex;align-items:center;padding:24px"><div><div style="font-size:26px;font-weight:300">Live-TV</div><div style="font-size:12px;color:var(--dim);margin-top:3px">11 Sender</div></div></div>
+  <div style="position:absolute;left:266px;top:152px;width:646px;height:172px;background:var(--card);border-radius:14px;padding:16px"><div style="font-size:12px;font-weight:700;letter-spacing:.1em;color:#FFD296">SZ</div><div style="font-size:24px;font-weight:300;line-height:1.15;margin-top:6px">Debatte im Landtag: neue Regeln für Wärmepumpen</div><div style="font-size:14px;color:#E4E4EC;margin-top:6px">Die Opposition fordert Nachbesserungen bei der Förderung.</div></div>
+</div>
+
+<!-- ============ 2. HOMESCREEN SOLL ============ -->
+<div class="cap">2 · SOLL — Banner 960×88 dp: Bild statt 64 Einzelzahlen, Wochentrend als Einheit</div>
+<div class="tv">
+  <div style="position:absolute;left:48px;top:16px;width:864px;display:flex;align-items:flex-end">
+    <div style="font-size:32px;font-weight:200;flex:1;line-height:1">20:14</div>
+    <div style="font-size:13px;color:var(--dim)">Montag, 24. November</div>
+  </div>
+  <div class="banner now">
+    <svg class="ic" width="52" height="52" viewBox="0 0 52 52" style="margin-right:14px">
+      <g transform="translate(26,26)"><circle cx="0" cy="0" r="10.4" class="cloudfill"/><circle cx="10.2" cy="0" r="8.8" class="cloudfill"/><circle cx="-10.2" cy="0" r="6.8" class="cloudfill"/><rect x="-11.3" y="0" width="23.7" height="9" rx="4.5" class="cloudfill"/></g>
+    </svg>
+    <div style="width:104px"><div class="btemp thin">2°</div><div style="font-size:12px;letter-spacing:.06em;color:var(--dim);text-transform:uppercase;margin-top:2px">München</div></div>
+    <div style="width:206px"><div class="bline light">Ideal zum Rausgehen</div>
+      <div style="font-size:12px;color:var(--dim);margin-top:2px">wolkig · gefühlt -1° · 14 km/h</div></div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#CFE2FF;background:rgba(120,178,255,.10);border-radius:9px;padding:5px 11px"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 1.5 L7 10" stroke="#78B2FF" stroke-width="2" stroke-linecap="round"/><circle cx="7" cy="11.6" r="1" fill="#78B2FF"/></svg>Regen 60 % nach 21 Uhr</div>
+    <div class="divider"></div>
+    <!-- Mini-Trend: Balken von min..max, Wochentrend als Fläche -->
+    <div style="width:300px;display:flex;flex-direction:column">
+      <div style="display:flex;font-size:10px;color:var(--dim);margin-bottom:3px">
+        <div style="flex:1">Heute</div><div style="flex:1;text-align:center">Di</div><div style="flex:1;text-align:center">Mi</div>
+        <div style="flex:1;text-align:center">Do</div><div style="flex:1;text-align:right">Fr</div>
+      </div>
+      <svg width="300" height="32" viewBox="0 0 300 32" style="overflow:visible">
+        <path d="M6,19 L76,16 L147,12 L218,7 L294,4" stroke="#FFC97A" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+        <path d="M6,25 L76,23 L147,21 L218,19 L294,17" stroke="#8FBFFF" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+        <circle cx="6" cy="19" r="2.8" fill="#FFC97A"/><circle cx="6" cy="25" r="2.8" fill="#8FBFFF"/>
+      </svg>
+      <div style="display:flex;font-size:11px;color:var(--dim);margin-top:4px">
+        <div style="flex:1">2° / -2°</div><div style="flex:1;text-align:center">4° / -1°</div><div style="flex:1;text-align:center">6° / 3°</div>
+        <div style="flex:1;text-align:center">9° / 2°</div><div style="flex:1;text-align:right">11° / 4°</div>
+      </div>
+    </div>
+  </div>
+  <div style="position:absolute;left:48px;top:152px;width:210px;height:172px;background:var(--card);border-radius:14px;display:flex;align-items:center;padding:24px"><div><div style="font-size:26px;font-weight:300">Live-TV</div><div style="font-size:12px;color:var(--dim);margin-top:3px">11 Sender</div></div></div>
+  <div style="position:absolute;left:266px;top:152px;width:646px;height:172px;background:var(--card);border-radius:14px;padding:16px"><div style="font-size:12px;font-weight:700;letter-spacing:.1em;color:#FFD296">SZ</div><div style="font-size:24px;font-weight:300;line-height:1.15;margin-top:6px">Debatte im Landtag: neue Regeln für Wärmepumpen</div></div>
+</div>
+
+<!-- ============ 3. BILDUNGS-REFERENZ ============ -->
+<div class="cap">3 · Warum 62 sp zu groß ist — Sehgröße bei 3 m / 55 Zoll (1 dp ≈ 0,575 mm)</div>
+<div class="tv" style="display:flex;align-items:center;justify-content:space-around;padding:0 60px">
+  <div style="text-align:center"><div style="font-size:62px;font-weight:200;line-height:1">62</div><div style="font-size:13px;color:var(--dim);margin-top:8px">62 sp · 3,6 cm · 42′<br>Bogenmaß wie 14,6 pt auf Papier<br>„äh, eine Zahl"</div></div>
+  <div style="text-align:center"><div style="font-size:38px;font-weight:200;line-height:1">38</div><div style="font-size:13px;color:var(--dim);margin-top:8px">38 sp · 2,2 cm · 25′<br>Lesbar aus dem Augenwinkel<br>bei laufendem TV-Bild ✓</div></div>
+  <div style="text-align:center"><div style="font-size:30px;font-weight:200;line-height:1">30</div><div style="font-size:13px;color:var(--dim);margin-top:8px">30 sp · 1,7 cm · 20′<br>Zweimal die Xiaomi-Richtlinie<br>von 12 sp (Homescreen) ✓</div></div>
+</div>
+
+<!-- ============ 4. DETAILSEITE IST ============ -->
+<div class="cap">4 · IST — Detailseite: alles eine Größe, alles in einer Säule → 62 sp oben, 9 sp unten</div>
+<div class="tv">
+  <div class="page">
+    <div class="kicker">WETTER · MÜNCHEN</div>
+    <div class="nowrow">
+      <svg class="ic" width="96" height="96" viewBox="0 0 96 96" style="margin-right:22px">
+        <g transform="translate(48,43.2)"><circle cx="0" cy="0" r="19.2" class="cloudfill"/><circle cx="18.8" cy="0" r="16.3" class="cloudfill"/><circle cx="-18.8" cy="0" r="12.5" class="cloudfill"/><rect x="-20.9" y="0" width="43.9" height="17.3" rx="8.6" class="cloudfill"/></g>
+      </svg>
+      <div>
+        <div class="t62 thin">2°</div>
+        <div class="cond17">wolkig&nbsp;&nbsp;·&nbsp;&nbsp;Höchst 2°&nbsp;&nbsp;·&nbsp;&nbsp;Tief -2°</div>
+        <div class="feel13">Gefühlt wie -1°</div>
+      </div>
+    </div>
+    <div class="facts">
+      <div class="fcard"><div class="flabel">NIEDERSCHLAG</div><div class="fval">55 %</div><div class="fsub">möglich</div></div>
+      <div class="fcard"><div class="flabel">LUFTFEUCHTE</div><div class="fval">82 %</div><div class="fsub">schwül</div></div>
+      <div class="fcard"><div class="flabel">WIND</div><div class="fval">14 km/h</div><div class="fsub">spürbar</div></div>
+      <div class="fcard"><div class="flabel">SONNE</div><div class="fval">07:32</div><div class="fsub">Untergang 16:21</div></div>
+    </div>
+    <div class="sect">VERLAUF HEUTE</div>
+    <div style="height:120px;background:#131418;border-radius:10px"></div>
+    <div class="sect">DIE NÄCHSTEN TAGE</div>
+    <div class="dl"><div class="d" style="color:var(--accent)">Heute</div><svg class="ic" width="30" height="30" viewBox="0 0 30 30"><g transform="translate(15,13.5)"><circle cx="0" cy="0" r="6" class="cloudfill"/><circle cx="5.8" cy="0" r="5" class="cloudfill"/><circle cx="-5.8" cy="0" r="3.9" class="cloudfill"/><rect x="-6.6" y="0" width="13.8" height="5.4" rx="2.7" class="cloudfill"/></g></svg><div class="dcond">wolkig</div><div class="barwrap"><div class="bar" style="left:20%;width:50%"></div></div><div class="dvals">-2° / 2°</div><div class="drain">55 %</div></div>
+    <div class="dl"><div class="d">Di</div><svg class="ic" width="30" height="30" viewBox="0 0 30 30"><g transform="translate(13,11.6)"><circle r="4.5" class="sunfill"/></g><g transform="translate(18.5,18.5)"><circle cx="-2.7" cy="0" r="4.7" class="cloudfill"/><circle cx="1.2" cy="-1.1" r="5.3" class="cloudfill"/><circle cx="5.4" cy="0.5" r="3.7" class="cloudfill"/><rect x="-3.1" y="0" width="9.9" height="4.3" rx="2.1" class="cloudfill"/></g></svg><div class="dcond">heiter</div><div class="barwrap"><div class="bar" style="left:26%;width:44%"></div></div><div class="dvals">-1° / 4°</div><div class="drain"></div></div>
+  </div>
+</div>
+
+<!-- ============ 5. DETAILSEITE SOLL ============ -->
+<div class="cap">5 · SOLL (#2) — zweispaltig: links Zahlen, rechts Bild. 38 sp statt 62 sp, ganzes Wo-Wetter in 40 sp</div>
+<div class="tv">
+  <div class="r2">
+    <div class="hdr"><div class="kicker">WETTER · MÜNCHEN</div><div class="hsub">AKTUALISIERT 20:14</div></div>
+
+    <div class="now2">
+      <svg class="ic" width="84" height="84" viewBox="0 0 84 84" style="margin-right:18px">
+        <g transform="translate(42,37.8)"><circle cx="0" cy="0" r="16.8" class="cloudfill"/><circle cx="16.5" cy="0" r="14.3" class="cloudfill"/><circle cx="-16.5" cy="0" r="10.9" class="cloudfill"/><rect x="-18.3" y="0" width="38.4" height="15.1" rx="7.5" class="cloudfill"/></g>
+      </svg>
+      <div class="t38 thin">2°</div>
+      <div style="margin-left:24px;display:flex;flex-direction:column;justify-content:center;gap:6px">
+        <div class="feel19">wolkig · gefühlt <span class="feelfeel">-1°</span></div>
+        <div class="stroke"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 2 L8 11" stroke="#78B2FF" stroke-width="2.2" stroke-linecap="round"/><circle cx="8" cy="13.2" r="1.2" fill="#78B2FF"/></svg>Regen ab 21 Uhr — Jacke reicht, kein Schirm</div>
+      </div>
+      <div class="highlow">
+        <span><small>HÖCHST</small>1°</span>
+        <span style="color:var(--dim)"><small>TIEF</small>-2°</span>
+      </div>
+    </div>
+
+    <div class="row3">
+      <div class="mini"><div class="l">WIND</div><div class="v">14<em>km/h</em></div></div>
+      <div class="mini"><div class="l">LUFTFEUCHTE</div><div class="v">82<em>%</em></div></div>
+      <div class="mini"><div class="l">SONNE</div><div class="v">07:32<em>– 16:21</em></div></div>
+      <div class="mini"><div class="l">TAGESLÄNGE</div><div class="v">8 h 49<em>min</em></div></div>
+    </div>
+
+    <div style="display:flex;gap:16px;margin-top:14px;flex:1;min-height:0">
+      <!-- links: Verlauf -->
+      <div style="flex:1.9">
+        <div class="charthead">VERLAUF HEUTE <span style="font-weight:400;letter-spacing:0;color:#5E5E6A">· 1-h-Schritte aus der API</span></div>
+        <div class="chartbox" style="background:none;padding:0;height:150px">
+          <svg width="100%" height="150" viewBox="0 0 560 150" preserveAspectRatio="none">
+            <defs><linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#F7941E" stop-opacity=".28"/><stop offset="1" stop-color="#F7941E" stop-opacity="0"/>
+            </linearGradient></defs>
+            <path d="M34,60 L78,66 L122,72 L166,64 L210,52 L254,42 L298,30 L342,26 L386,28 L430,40 L474,38 L518,44 L548,46"
+                  fill="none" stroke="#F7941E" stroke-width="2.6" stroke-linecap="round"/>
+            <path d="M34,60 L78,66 L122,72 L166,64 L210,52 L254,42 L298,30 L342,26 L386,28 L430,40 L474,38 L518,44 L548,46 L548,128 L34,128 Z" fill="url(#fade)"/>
+            <circle cx="548" cy="46" r="5" fill="#F7941E"/><circle cx="548" cy="46" r="2" fill="#0A0A0C"/>
+            <text x="34" y="146" fill="#82828F" font-size="11" text-anchor="middle">0h</text>
+            <text x="166" y="146" fill="#82828F" font-size="11" text-anchor="middle">6h</text>
+            <text x="298" y="146" fill="#82828F" font-size="11" text-anchor="middle">12h</text>
+            <text x="430" y="146" fill="#82828F" font-size="11" text-anchor="middle">18h</text>
+            <text x="548" y="146" fill="#82828F" font-size="11" text-anchor="end">24h</text>
+            <text x="30" y="34" fill="#82828F" font-size="11" text-anchor="end">2°</text>
+            <text x="30" y="75" fill="#82828F" font-size="11" text-anchor="end">0°</text>
+            <text x="30" y="116" fill="#82828F" font-size="11" text-anchor="end">-2°</text>
+          </svg>
+        </div>
+      </div>
+      <!-- rechts: Woche -->
+      <div style="flex:1.1">
+        <div class="charthead">DIE WOCHE</div>
+        <div class="daylist">
+          <div class="dl"><div class="d" style="color:var(--accent)">Heute</div><div class="barwrap"><div class="bar" style="left:10%;width:50%"></div></div><div class="v">-2/2°</div><div class="r">55%</div></div>
+          <div class="dl"><div class="d">Di</div><div class="barwrap"><div class="bar" style="left:18%;width:44%"></div></div><div class="v">-1/4°</div><div class="r"></div></div>
+          <div class="dl"><div class="d">Mi</div><div class="barwrap"><div class="bar" style="left:26%;width:52%"></div></div><div class="v">3/6°</div><div class="r">80%</div></div>
+          <div class="dl"><div class="d">Do</div><div class="barwrap"><div class="bar" style="left:30%;width:38%"></div></div><div class="v">2/9°</div><div class="r">20%</div></div>
+          <div class="dl"><div class="d">Fr</div><div class="barwrap"><div class="bar" style="left:34%;width:34%"></div></div><div class="v">4/11°</div><div class="r"></div></div>
+          <div class="dl"><div class="d">Sa</div><div class="barwrap"><div class="bar" style="left:38%;width:42%"></div></div><div class="v">5/8°</div><div class="r">35%</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 6. VARIANTE B ============ -->
+<div class="cap">6 · Alternative B — 5 statt 8 Tage, aber mit Temperatur-Balken (Wochenvergleich direkt auf Homescreen)</div>
+<div class="tv">
+  <div style="position:absolute;left:48px;top:16px;width:864px;display:flex;align-items:flex-end">
+    <div style="font-size:32px;font-weight:200;flex:1;line-height:1">20:14</div>
+    <div style="font-size:13px;color:var(--dim)">Montag, 24. November</div>
+  </div>
+  <div class="banner now" style="height:88px">
+    <svg class="ic" width="52" height="52" viewBox="0 0 52 52" style="margin-right:14px">
+      <g transform="translate(26,26)"><circle cx="0" cy="0" r="10.4" class="cloudfill"/><circle cx="10.2" cy="0" r="8.8" class="cloudfill"/><circle cx="-10.2" cy="0" r="6.8" class="cloudfill"/><rect x="-11.3" y="0" width="23.7" height="9" rx="4.5" class="cloudfill"/></g>
+    </svg>
+    <div style="width:104px"><div class="btemp thin">2°</div><div style="font-size:12px;letter-spacing:.06em;color:var(--dim);text-transform:uppercase;margin-top:2px">München</div></div>
+    <div style="width:200px"><div class="bline light">Ideal zum Rausgehen</div><div style="font-size:12px;color:var(--dim);margin-top:2px">wolkig · gefühlt -1° · Regen ab 21 h</div></div>
+    <div class="divider"></div>
+    <div style="flex:1;display:flex;align-items:flex-end;justify-content:space-between;height:74px;padding:0 8px">
+      <!-- Heute -->
+      <div style="width:54px;text-align:center;display:flex;flex-direction:column;align-items:center;height:100%">
+        <div style="font-size:10px;color:var(--accent);margin-bottom:2px">Heute</div>
+        <div style="display:flex;gap:2px;align-items:flex-end;flex:1">
+          <div class="tempbar" style="position:relative;height:30px;width:9px;top:6px"></div>
+          <div class="tempbar" style="position:relative;height:42px;width:9px;top:0"></div>
+        </div>
+        <div style="font-size:12px;margin-top:2px">2°</div><div style="font-size:10px;color:#82828F">-2°</div>
+      </div>
+      <div style="width:54px;text-align:center;display:flex;flex-direction:column;align-items:center;height:100%">
+        <div style="font-size:10px;color:var(--dim);margin-bottom:2px">Di</div>
+        <div style="display:flex;gap:2px;align-items:flex-end;flex:1">
+          <div class="tempbar" style="position:relative;height:34px;width:9px;top:4px"></div>
+          <div class="tempbar" style="position:relative;height:48px;width:9px;top:0"></div>
+        </div>
+        <div style="font-size:12px;margin-top:2px">4°</div><div style="font-size:10px;color:#82828F">-1°</div>
+      </div>
+      <div style="width:54px;text-align:center;display:flex;flex-direction:column;align-items:center;height:100%">
+        <div style="font-size:10px;color:var(--dim);margin-bottom:2px">Mi</div>
+        <div style="display:flex;gap:2px;align-items:flex-end;flex:1">
+          <div class="tempbar" style="position:relative;height:46px;width:9px;top:6px"></div>
+          <div class="tempbar" style="position:relative;height:58px;width:9px;top:0"></div>
+        </div>
+        <div style="font-size:12px;margin-top:2px">6°</div><div style="font-size:10px;color:#82828F">3°</div>
+      </div>
+      <div style="width:54px;text-align:center;display:flex;flex-direction:column;align-items:center;height:100%">
+        <div style="font-size:10px;color:var(--dim);margin-bottom:2px">Do</div>
+        <div style="display:flex;gap:2px;align-items:flex-end;flex:1">
+          <div class="tempbar warm" style="position:relative;height:40px;width:9px;top:18px"></div>
+          <div class="tempbar warm" style="position:relative;height:66px;width:9px;top:0"></div>
+        </div>
+        <div style="font-size:12px;margin-top:2px">9°</div><div style="font-size:10px;color:#82828F">2°</div>
+      </div>
+      <div style="width:54px;text-align:center;display:flex;flex-direction:column;align-items:center;height:100%">
+        <div style="font-size:10px;color:var(--dim);margin-bottom:2px">Fr</div>
+        <div style="display:flex;gap:2px;align-items:flex-end;flex:1">
+          <div class="tempbar warm" style="position:relative;height:48px;width:9px;top:26px"></div>
+          <div class="tempbar warm" style="position:relative;height:74px;width:9px;top:0"></div>
+        </div>
+        <div style="font-size:12px;margin-top:2px">11°</div><div style="font-size:10px;color:#82828F">4°</div>
+      </div>
+    </div>
+  </div>
+  <div style="position:absolute;left:48px;top:152px;width:210px;height:172px;background:var(--card);border-radius:14px;display:flex;align-items:center;padding:24px"><div><div style="font-size:26px;font-weight:300">Live-TV</div><div style="font-size:12px;color:var(--dim);margin-top:3px">11 Sender</div></div></div>
+  <div style="position:absolute;left:266px;top:152px;width:646px;height:172px;background:var(--card);border-radius:14px;padding:16px"><div style="font-size:12px;font-weight:700;letter-spacing:.1em;color:#FFD296">SZ</div><div style="font-size:24px;font-weight:300;line-height:1.15;margin-top:6px">Debatte im Landtag: neue Regeln für Wärmepumpen</div></div>
+</div>
+
+<!-- ============ 7. HOMESCREEN TYP-SKALA ============ -->
+<div class="cap">7 · Homescreen heute: 4 Schriftgrößen (34/11/9/9 sp) + 4 Zeilenhöhen in 96 dp — Antipattern</div>
+<div class="tv">
+  <div style="position:absolute;left:48px;top:16px;width:864px;display:flex;align-items:flex-end">
+    <div style="font-size:32px;font-weight:200;flex:1;line-height:1">20:14</div>
+    <div style="font-size:13px;color:var(--dim)">Montag, 24. November</div>
+  </div>
+  <div style="position:absolute;left:48px;top:64px;width:864px;color:#555;font-size:11px;line-height:1">
+    44 dp → Kachelbeginn (Uhr 32sp + 10dp + 12dp Label)
+  </div>
+  <div class="tile now" style="outline:1px solid rgba(247,148,30,.5)">
+    <div class="left">
+      <svg class="ic" width="46" height="46" viewBox="0 0 46 46" style="margin-right:10px"><g transform="translate(23,23)"><circle r="9.2" class="cloudfill"/><circle cx="9" r="7.8" class="cloudfill"/><circle cx="-9" r="6" class="cloudfill"/><rect x="-10" y="0" width="21" height="8" rx="4" class="cloudfill"/></g></svg>
+      <div class="txt" style="display:flex;flex-direction:column;gap:0">
+        <div class="trow"><div class="t34 thin">2°</div><div class="city">München</div></div>
+        <div class="cond11">wolkig 2° / -2°</div>
+        <div class="meta9">gefühlt -1° · 55 % Regen · 14 km/h</div>
+      </div>
+    </div>
+    <div class="strip" style="align-items:center">
+      <div class="col today" style="justify-content:center"><div class="wd">Heute</div><div class="hi" style="color:#FFE2A8">2°</div><div class="lo">-2°</div><div class="rr">55%</div></div>
+      <div class="col"><div class="wd">Di</div><div class="hi" style="color:#FFE2A8">4°</div><div class="lo">-1°</div><div class="rr"></div></div>
+      <div class="col"><div class="wd">Mi</div><div class="hi">6°</div><div class="lo">3°</div><div class="rr">80%</div></div>
+      <div class="col"><div class="wd">Do</div><div class="hi" style="color:#FFE2A8">9°</div><div class="lo">2°</div><div class="rr">20%</div></div>
+      <div class="col"><div class="wd">Fr</div><div class="hi" style="color:#FFE2A8">11°</div><div class="lo">4°</div><div class="rr"></div></div>
+      <div class="col"><div class="wd">Sa</div><div class="hi" style="color:#FFE2A8">8°</div><div class="lo">5°</div><div class="rr">35%</div></div>
+      <div class="col"><div class="wd">So</div><div class="hi">7°</div><div class="lo">3°</div><div class="rr">60%</div></div>
+      <div class="col"><div class="wd">Mo</div><div class="hi" style="color:#FFE2A8">10°</div><div class="lo">6°</div><div class="rr"></div></div>
+    </div>
+  </div>
+  <div style="position:absolute;left:48px;top:210px;width:864px;font-size:12px;color:#777;line-height:1.6">
+    34 sp für 90 % der Kachel, 9 sp für 30 % der Information → <b style="color:#F0F0F4">Schwellenwert-Empfehlung: 30 sp / 19 sp / 13 sp / 13 sp</b> (Verhältnis 2,3 : 1,5 : 1 : 1)<br>
+    Bei 3 m Perspektivabstand prüfen: Die Ziffern <span style="font-size:13px">„-2°"</span> (13 sp) sind am Limit. <span style="font-size:11px">„16 km/h" (11 sp)</span> ist zu klein.
+  </div>
+</div>
+
+<!-- ============ 8. RÜCKNAVIGATION ============ -->
+<div class="cap">8 · Fokus-Rückweg: Wo landet der Cursor nach dem Verlassen der Detailseite?</div>
+<div class="tv" style="display:flex;align-items:center;justify-content:center;padding:0 60px">
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;width:100%">
+    <div style="background:var(--card);border-radius:14px;padding:20px;border:2px solid var(--accent)">
+      <div style="font-size:14px;color:#FFD296;font-weight:700;letter-spacing:.1em">PROBLEM</div>
+      <div style="font-size:17px;line-height:1.4;margin-top:8px;color:#E4E4EC">Kachel fokussiert → startActivity → Detail → BACK → HomeActivity.onResume() → <span style="color:#FF8C7A">requestFocus() auf KACHEL_ID (Live-TV)</span>, nicht auf Wetter.</div>
+      <div style="font-size:13px;color:#82828F;margin-top:8px;line-height:1.4">Das ist der erste View mit Fokus im FrameLayout; die Wetter-Kachel hat keine ID. Jakob navigiert also nach jedem Wetter-Ausflug wieder zurück zur ersten Kachel.</div>
+    </div>
+    <div style="background:var(--card);border-radius:14px;padding:20px;border:2px solid rgba(120,178,255,.4)">
+      <div style="font-size:14px;color:#9FC5FF;font-weight:700;letter-spacing:.1em">FIX</div>
+      <div style="font-size:17px;line-height:1.4;margin-top:8px;color:#E4E4EC">1. <code style="color:#FFC97A">public static final int WEATHER_ID = 0x7f0f0004;</code> (analog NEWS_TILE_ID)<br>2. In HomeActivity: <code style="color:#FFC97A">weatherPanel.setId(WEATHER_ID)</code><br>3. In HomeActivity.onResume (bzw. nach Rückkehr) <code style="color:#FFC97A">requestFocus(WEATHER_ID)</code> prüfen</div>
+      <div style="font-size:13px;color:#82828F;margin-top:8px;line-height:1.4">Zusätzlich: am Detail-Activity-Aufruf <code style="color:#FFC97A">startActivityForResult</code> + <code style="color:#FFC97A">setResult(RESULT_OK)</code> an <code style="color:#FFC97A">onDestroy()</code> – nur bei „User kommt zurück", nicht bei Screensaver.</div>
+    </div>
+  </div>
+</div>
+
+<div class="cap" style="margin-top:14px">Farb-/Größen-Referenz: Hintergrund #0A0A0C, Karte #16161A, Text #F0F0F4, Dim #8C8C98, Akzent #F7941E · Skala 960×540 dp (1080p / 2.0 dpi)</div>
+</body>
+</html>

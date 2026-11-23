@@ -47,6 +47,42 @@ public class HomeService extends AccessibilityService {
     private View overlay;
     private boolean added, showing;
 
+    private android.os.Handler guard;
+    private final Runnable guardTick = new Runnable() {
+        public void run() {
+            try { checkFront(); } catch (Throwable ignored) { }
+            if (guard != null) guard.postDelayed(this, 1200);
+        }
+    };
+
+    /**
+     * Waechter: schaut alle 1,2 s, was vorne steht. Das Event allein reicht
+     * nicht - beim Boot und nach manchen Updates kommt kein
+     * TYPE_WINDOW_STATE_CHANGED, dann bleibt der Amazon-Launcher stehen.
+     */
+    private void checkFront() {
+        long now = SystemClock.elapsedRealtime();
+        if (now < pausedUntil) return;
+
+        android.app.ActivityManager am =
+                (android.app.ActivityManager) getSystemService(ACTIVITY_SERVICE);
+        if (am == null) return;
+        java.util.List<android.app.ActivityManager.RunningAppProcessInfo> ps =
+                am.getRunningAppProcesses();
+        if (ps == null) return;
+
+        for (android.app.ActivityManager.RunningAppProcessInfo p : ps) {
+            if (p.importance != android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) continue;
+            if (AMAZON_PKG.equals(p.processName)) {
+                if (now < ignoreUntil) return;
+                cover();
+                return;
+            }
+            // Eigene App oder irgendeine andere im Vordergrund: nichts tun.
+            return;
+        }
+    }
+
     private final Runnable hideNow = new Runnable() {
         public void run() { hide(); }
     };
@@ -101,13 +137,25 @@ public class HomeService extends AccessibilityService {
         attach();
 
         try {
-            registerReceiver(homePressed,
-                    new IntentFilter("com.amazon.tv.launcher.HOME_PRESSED"));
+            IntentFilter f = new IntentFilter();
+            // Amazons echter Broadcast (live geprueft 11/2026 auf Fire OS 8):
+            f.addAction("amazon.intent.action.HOME_PRESSED");
+            // Aeltere/zusaetzliche Schreibweise - schadet nicht, falls vorhanden:
+            f.addAction("com.amazon.tv.launcher.HOME_PRESSED");
+            registerReceiver(homePressed, f);
         } catch (RuntimeException ignored) { }
+
+        // Waechter starten (faengt Faelle ab, in denen kein Event kommt)
+        guard = new android.os.Handler(android.os.Looper.getMainLooper());
+        guard.postDelayed(guardTick, 1500);
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
+        if (guard != null) {
+            guard.removeCallbacksAndMessages(null);
+            guard = null;
+        }
         try { unregisterReceiver(homePressed); } catch (RuntimeException ignored) { }
         if (added && wm != null && overlay != null) {
             try { wm.removeViewImmediate(overlay); } catch (RuntimeException ignored) { }
@@ -146,7 +194,11 @@ public class HomeService extends AccessibilityService {
         if (pkg.equals(getPackageName())) return;
 
         // ---- Nur der ECHTE Amazon-Homescreen loest aus ----
-        if (pkg.equals(AMAZON_PKG) && cls.contains("HomeActivity")) {
+        // Wichtig: Fire OS 8 nennt die Klasse "ui.HomeActivity_vNext", nicht
+        // "HomeActivity". Deshalb wird auf "HomeActivity" per contains geprueft
+        // UND auf den blossen Paketwechsel reagiert - sonst bleibt der
+        // Amazon-Launcher stehen, wenn kein Klassenname mitkommt.
+        if (pkg.equals(AMAZON_PKG)) {
             long now = SystemClock.elapsedRealtime();
             if (now < ignoreUntil || now < pausedUntil) return;
             cover();

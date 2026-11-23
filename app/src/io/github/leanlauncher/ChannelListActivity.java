@@ -63,6 +63,23 @@ public class ChannelListActivity extends Activity {
 
     private int dp(int v) { return (int) (v * dp + 0.5f); }
 
+    /** Faerbt eine View nur, wenn sie tatsaechlich Text traegt. */
+    private static void setTextColorIfText(View v, int color) {
+        if (v instanceof TextView) ((TextView) v).setTextColor(color);
+    }
+
+    /** Faerbt alle TextView-Nachfahren einer View (Container rekursiv). */
+    private static void tintTexts(View v, int color) {
+        if (v instanceof TextView) {
+            ((TextView) v).setTextColor(color);
+            return;
+        }
+        if (v instanceof android.view.ViewGroup) {
+            android.view.ViewGroup g = (android.view.ViewGroup) v;
+            for (int i = 0; i < g.getChildCount(); i++) tintTexts(g.getChildAt(i), color);
+        }
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -261,12 +278,14 @@ public class ChannelListActivity extends Activity {
                     LinearLayout r = (LinearLayout) v;
                     v.setBackground(Ui.round(has ? Ui.CARD_FOCUS : Ui.CARD, dp, 9));
                     if (r.getChildCount() > 0) {
-                        ((TextView) r.getChildAt(0)).setTextColor(
-                                has ? Ui.TEXT_ON_FOCUS : Ui.TEXT);
+                        // Kind 0 ist der Sendername (TextView), kann aber je nach
+                        // Aufbau ein Container sein - deshalb pruefen statt casten.
+                        setTextColorIfText(r.getChildAt(0), has ? Ui.TEXT_ON_FOCUS : Ui.TEXT);
                     }
                     if (r.getChildCount() > 1) {
-                        ((TextView) r.getChildAt(1)).setTextColor(
-                                has ? Color.rgb(60, 44, 24) : Ui.TEXT_DIM);
+                        // Kind 1 ist die rechte Spalte (Container mit Sendung + Balken).
+                        // Deren Textkinder muessen mit umgefaerbt werden.
+                        tintTexts(r.getChildAt(1), has ? Color.rgb(60, 44, 24) : Ui.TEXT_DIM);
                     }
                     v.animate().scaleX(has ? 1.02f : 1f).scaleY(has ? 1.02f : 1f)
                             .setDuration(80).start();

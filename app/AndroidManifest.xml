@@ -7,6 +7,9 @@
     <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="34" />
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Grobe Ortung fuer den Wetter-Ort. Optional: ohne Erlaubnis bleibt
+         der gespeicherte bzw. der Standard-Ort. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
@@ -91,6 +94,48 @@
             android:name=".LiveActivity"
             android:exported="false"
             android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
+
+        <!-- Ort fuer das Wetter einstellen -->
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
+
+        <!-- Tagesuebersicht Aktienmarkt -->
+        <activity
+            android:name=".StocksActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
+
+        <!-- Tagesschau-Video (neueste 100 Sekunden) -->
+        <activity
+            android:name=".TagesschauActivity"
+            android:exported="false"
+            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
+
+        <!-- Wetter-Detailansicht fuer den heutigen Tag -->
+        <activity
+            android:name=".WeatherDetailActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
+
+        <!-- Nachrichten-Uebersicht: alle Schlagzeilen als Liste -->
+        <activity
+            android:name=".NewsListActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
+
+        <!-- Artikel-Ansicht fuer die SZ-Schlagzeilen -->
+        <activity
+            android:name=".ArticleActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
             android:configChanges="orientation|screenSize|keyboardHidden" />
 
     </application>
